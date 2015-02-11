@@ -1,0 +1,63 @@
+%!TEX root = std.tex
+\rSec0[intro]{General}
+
+\indextext{diagnostic message|see{message, diagnostic}}%
+\indexdefn{conditionally-supported behavior!see{behavior, conditionally-supported}}%
+\indextext{dynamic type|see{type, dynamic}}%
+\indextext{static type|see{type, static}}%
+\indextext{ill-formed program|see{program, ill-formed}}%
+\indextext{well-formed program|see{program, well-formed}}%
+\indextext{implementation-defined behavior|see{behavior, implemen\-tation-defined}}%
+\indextext{undefined behavior|see{behavior, undefined}}%
+\indextext{unspecified behavior|see{behavior, unspecified}}%
+\indextext{implementation limits|see{limits, implementation}}%
+\indextext{locale-specific behavior|see{behavior, locale-specific}}%
+\indextext{multibyte character|see{character, multibyte}}%
+\indextext{object|seealso{object model}}%
+\indextext{subobject|seealso{object model}}%
+\indextext{derived class!most|see{most derived class}}%
+\indextext{derived object!most|see{most derived object}}%
+\indextext{program execution!as-if rule|see{as-if~rule}}%
+\indextext{observable behavior|see{behavior, observable}}%
+\indextext{precedence of operator|see{operator, precedence of}}%
+\indextext{order of evaluation in expression|see{expression, order of evaluation of}}%
+\indextext{atomic operations|see{operation, atomic}}%
+\indextext{multiple threads|see{threads, multiple}}%
+\indextext{normative references|see{references, normative}}
+
+\rSec1[intro.overview]{Overview}
+
+Valpine is a general-purpose programming language that is backwards compatible with C++. The syntax avoids deviating from C++ where possible.
+
+\rSec1[intro.memory]{Memory Managment}
+
+Valpine preserves the semantics of C++ memory managment, but adds new constructs for cleaner memory ownership.
+
+\pnum
+\indextext{memory|(}%
+A raw pointer to some type may be declared normally such as \tcode{T *p;}. Additionally, there are 4 types of built-in smart pointers that can be used: scoped, unique, shared, and weak. These modifiers can be assigned much like the const modifier.
+
+\begin{codeblock}
+
+T *			p1;	//raw pointer to a T
+T * raw			p2;	//raw pointer to a T
+T * !			p3;	//scoped pointer to a T
+T * scoped		p4;	//scoped pointer to a T
+T * ^			p5;	//unique pointer to a T
+T * unique		p6;	//unique pointer to a T
+T * shared		p7;	//shared pointer to a T
+T * weak		p8;	//weak pointer to a T
+
+\end{codeblock}
+
+\pnum
+\indextext{memory|(}%
+Scoped pointers behave exactly like raw pointers, but automatically call the appropriate delete when exiting the scope they were created in. They can only be assigned \tcode{nullptr} or a \tcode{newexpr} expression. They are used to express single ownership. A shorthand for the \tcode{scoped} keyword is \tcode{!}.
+
+\pnum
+\indextext{memory|(}%
+Unique pointers cannot be assigned to other pointers. They automatically call the appropriate delete when exiting the scope they were created in. They can only be assigned \tcode{nullptr} or a \tcode{newexpr} expression. They are used to express single ownership. A shorthand for the \tcode{unique} keyword is \tcode{\^}.
+
+\pnum
+\indextext{memory|(}%
+Shared pointers behave similar to scoped pointers, but the automatic deletion is dependent upon a shared reference count. 
