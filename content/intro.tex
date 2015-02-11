@@ -1,4 +1,3 @@
-%!TEX root = std.tex
 \rSec0[intro]{General}
 
 \indextext{diagnostic message|see{message, diagnostic}}%
@@ -33,9 +32,7 @@ Valpine is a general-purpose programming language that is backwards compatible w
 
 Valpine preserves the semantics of C++ memory managment, but adds new constructs for cleaner memory ownership.
 
-\pnum
-\indextext{memory|(}%
-A raw pointer to some type may be declared normally such as \tcode{T *p;}. Additionally, there are 4 types of built-in smart pointers that can be used: scoped, unique, shared, and weak. These modifiers can be assigned much like the const modifier.
+A raw pointer to some type may be declared normally such as \tcode{T *p;}. Additionally, there are 4 types of built-in smart pointers that can be used: scoped, unique, shared, and weak. These modifiers can be assigned much like the \tcode{const} modifier.
 
 \begin{codeblock}
 
@@ -50,14 +47,49 @@ T * weak		p8;	//weak pointer to a T
 
 \end{codeblock}
 
-\pnum
-\indextext{memory|(}%
+\Sec2[intro.memory.scoped]{Scoped Pointer}
+
 Scoped pointers behave exactly like raw pointers, but automatically call the appropriate delete when exiting the scope they were created in. They can only be assigned \tcode{nullptr} or a \tcode{newexpr} expression. They are used to express single ownership. A shorthand for the \tcode{scoped} keyword is \tcode{!}.
 
-\pnum
-\indextext{memory|(}%
+\Sec2[intro.memory.unique]{Unique Pointer}
 Unique pointers cannot be assigned to other pointers. They automatically call the appropriate delete when exiting the scope they were created in. They can only be assigned \tcode{nullptr} or a \tcode{newexpr} expression. They are used to express single ownership. A shorthand for the \tcode{unique} keyword is \tcode{\^}.
 
-\pnum
-\indextext{memory|(}%
-Shared pointers behave similar to scoped pointers, but the automatic deletion is dependent upon a shared reference count. 
+\Sec2[intro.memory.shared]{Shared Pointer}
+Shared pointers behave similar to scoped pointers, but the automatic deletion is dependent upon a shared reference count. They can only be assigned \tcode{nullptr}, a \tcode{newexpr} expression, another shared pointer, or a weak pointer. The reference count is equal to the number of shared (strong) references to a single memory location. The memory is automatically deleted when the reference count is zero.
+
+\begin{codeblock}
+
+{
+	T * shared p1 = new T;	//ref count = 1
+	T * shared p2 = p1;		//ref count = 2
+	{
+		T * shared p3 = p2;	//ref count = 3
+	} //ref count = 2
+
+	T * shared p4 = p1;	//ref count = 3
+} //ref count = 0, deleted
+
+\end{codeblock}
+
+\Sec2[intro.memory.weak]{Weak Pointer}
+
+Weak pointers are used for non-owning observation. They can only be assigned from a shared pointer and do not increment the reference count. When the reference count from the shared pointer reaches zero and the memory is deleted, the weak pointer is set to null. When dereferencing a weak pointer, the operation should be surrounded with lock block. This atomically increments the shared reference count by one. At the end of the block, the reference count is automatically decremented. This ensures the memory location will always be dereferencable during the block. If the pointer is null during locking, the block will not execute. It is possible for the reference count to reach zero if the strong references go out of scope on other threads for example. It is illegal to dereference an unlocked weak pointer.
+
+\begin{codeblock}
+
+//thread 1
+T * shared ps = new T;
+
+
+//thread 2
+T * weak pw = ps;
+lock (pw)	
+{
+	//the reference count is guarunteed to be greater than zero throughout this block
+	//even if ps goes out of scope on thread 1
+	pw->doSomething();
+	
+} //reference count is decremented and memory is deleted if at zero
+
+
+\end{codeblock}
