@@ -36,17 +36,16 @@ A raw pointer to some type may be declared normally such as \tcode{T *p;}. Addit
 \begin{codeblock}
 
 T *			p1;	//raw pointer to a T
-T * raw			p2;	//raw pointer to a T
-T * !			p3;	//scoped pointer to a T
-T * scoped		p4;	//scoped pointer to a T
-T * ^			p5;	//unique pointer to a T
-T * unique		p6;	//unique pointer to a T
-T * shared		p7;	//shared pointer to a T
-T * weak		p8;	//weak pointer to a T
+T * !			p2;	//scoped pointer to a T
+T * scoped		p3;	//scoped pointer to a T
+T * ^			p4;	//unique pointer to a T
+T * unique		p5;	//unique pointer to a T
+T * shared		p6;	//shared pointer to a T
+T * weak		p7;	//weak pointer to a T
 
 \end{codeblock}
 
-Any managed pointer can be force casted to a raw pointer by using \tcode{rawptr()}.
+Scoped pointers can be implicitly casted to raw. All other managed pointer must be force casted to a raw pointer by using \tcode{rawptr()}. The \tcode{rawptr} function should be avoided and is only available for backwards compatability with legacy C++ systems.
 
 \begin{codeblock}
 
@@ -123,5 +122,61 @@ lock (pw)
 	
 } //reference count is decremented and memory is deleted if at zero
 
+
+\end{codeblock}
+
+
+
+
+\Sec1[memory.references]{References}
+
+References work largely the same as in C++. The only difference is when assigning a dereferenced, managed pointer to a reference. A scoped pointer can be dereferenced and assigned to a normal reference.
+
+\begin{codeblock}
+
+T *! p = new T;
+T &ref = *p;
+
+\end{codeblock}
+
+It is illegal to assign a dereferenced unique, shared, or weak pointer to a reference. The reference itself must match the type of managed pointer.
+
+\begin{codeblock}
+
+T * p0 = new T;
+T * unique p1 = new T;
+T * shared p2 = new T;
+T * weak p3 = p2;
+
+T &r1 = *p1; //illegal
+T &r2 = *p2; //illegal
+T &r3 = *p3; //illegal
+
+T & unique b1 = *p1;
+T & shared b2 = *p2;
+lock (p3) { T & shared b3 = *p3; } //legal since a weak pointer can initialize a shared pointer
+lock (p3) { T & weak b4 = *p3; }
+T & weak b5 = *p2; //legal since a shared pointer can initialize a weak pointer
+T & strong = *p0; //illegal
+
+\end{codeblock}
+
+References can be marked with the auto keyword to allow interoperability with all types of references. It is possible to have an auto reference with an auto base type. For example, \tcode{auto \& auto ref = *ptr;}.
+
+References declared as parameters for functions are marked auto by default. A redundancy warning should be issued if reference parameters are marked auto. The compiler should overload functions as needed to satisfy auto reference parameters if a suitable overload is not already implemented.
+
+\begin{codeblock}
+
+T * shared p1 = new T;
+
+T & shared r1 = *p1;
+T & auto r2 = *p1;
+auto & auto r3 = *p1;
+
+void doStuff(T & value) {}
+doStuff(*p1);	//overload to T & shared value
+
+T * unique p2 = new T;
+doStuff(*p2);	//overload to T & unique value
 
 \end{codeblock}
