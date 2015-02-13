@@ -1,0 +1,52 @@
+\rSec0[functions]{Functions}
+
+\indextext{diagnostic message|see{message, diagnostic}}%
+\indexdefn{conditionally-supported behavior!see{behavior, conditionally-supported}}%
+\indextext{dynamic type|see{type, dynamic}}%
+\indextext{static type|see{type, static}}%
+\indextext{ill-formed program|see{program, ill-formed}}%
+\indextext{well-formed program|see{program, well-formed}}%
+\indextext{implementation-defined behavior|see{behavior, implemen\-tation-defined}}%
+\indextext{undefined behavior|see{behavior, undefined}}%
+\indextext{unspecified behavior|see{behavior, unspecified}}%
+\indextext{implementation limits|see{limits, implementation}}%
+\indextext{locale-specific behavior|see{behavior, locale-specific}}%
+\indextext{multibyte character|see{character, multibyte}}%
+\indextext{object|seealso{object model}}%
+\indextext{subobject|seealso{object model}}%
+\indextext{derived class!most|see{most derived class}}%
+\indextext{derived object!most|see{most derived object}}%
+\indextext{program execution!as-if rule|see{as-if~rule}}%
+\indextext{observable behavior|see{behavior, observable}}%
+\indextext{precedence of operator|see{operator, precedence of}}%
+\indextext{order of evaluation in expression|see{expression, order of evaluation of}}%
+\indextext{atomic operations|see{operation, atomic}}%
+\indextext{multiple threads|see{threads, multiple}}%
+\indextext{normative references|see{references, normative}}
+
+\rSec1[functions.overview]{Overview}
+
+Functions work exactly the same as in C++. Valpine adds two new types: local functions and initializer functions.
+
+\rSec1[functions.local]{Local Function}
+
+Valpine allows for locally defined functions inside of executable blocks. This means a function can be declared inside of control structures (if, while, etc.) or within other functions. Local functions are treated just like normal functions, which means local functions can recursively be defined inside of them. This allows helper functions to be declared inside of super functions which prevents unecessary name pollution of the surrounding scope.
+
+%%TODO we need to figure out capture semantics
+
+\rSec1[functions.initializer]{Initializer Function}
+
+Also refered to as an initializer block, this allows for complex initialization to be nested in the initialization of variables. An initializer function is unnamed, and has an implicit return type.
+
+\begin{codeblock}
+
+List<int> values = { 10, 14, -1, 6 };
+
+List<bool> combined := ^{
+	for (int i : values)
+	{
+		combined.append(i > 4);
+	}
+}
+
+\end{codeblock}
