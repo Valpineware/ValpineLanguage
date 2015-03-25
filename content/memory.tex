@@ -26,13 +26,14 @@
 
 \rSec1[memory.overview]{Overview}
 
-Valpine preserves the semantics of C++ memory managment, but adds new constructs for cleaner memory ownership.
+Valpine mostly preserves the semantics of C++ memory managment and adds new constructs for cleaner memory ownership. The main difference is references have been eliminated to simplify how addresses are managed.
 
 
 \rSec1[memory.pointers]{Pointers}
 
-Since the langauge does not use references, pointers must be used in situations where references normally would be used in C++. It is possible to explicitly take the address of something with the \& operator, but pointer assignments will implicitly take addresses as needed. For example:
+Since the langauge does not use references, pointers must be used in situations where references normally would be used in C++. It is possible to explicitly take the address of something with the \& operator, but pointer assignments will implicitly take addresses as needed.
 
+\enterexample
 \begin{codeblock}
 int a = 10;
 
@@ -44,85 +45,100 @@ int *c = &a;
 int **d = b;
 int **e = &b;
 \end{codeblock}
+\exitexample
 
-The reason for implicitly taking the address is to allow overloaded operators and other functions to work with non-pointers since references do not exist. For example:
+The reason for implicitly taking the address is to allow overloaded operators and other functions to work seamlessly with non-pointers since references do not exist.
 
+\enterexample
 \begin{codeblock}
-bool operator==(const T *lhs, const T *rhs)
-{
-	return lhs.value == rhs.value;
-}
+bool operator==(const T *lhs, const T *rhs) { return lhs.value == rhs.value; }
+void foo(T *t) { print(t.toString()); }
 
 T t1;
 T t2;
 
 //without implicit address taking, this would be required
-if (&t1 == &t2)
-	print("Equal");
+if (&t1 == &t2) print("Equal");	
+foo(&t1);
 
 //with implicit address taking, this is also legal
-if (t1 == t2)
-	print("Equal");
+if (t1 == t2) print("Equal");
+foo(t1);
 \end{codeblock}
+\exitexample
 
 Note that there is no implicit dereferencing, and all built in operators work on primitives by value.
 
+\enterexample
 \begin{codeblock}
-int *!a = new int(10);
-int b = a;	//illegal, incompatible types
-int c = *a;	//OK
+int *!a = new int(10);	//Scoped pointer \ref{memory.pointers.scoped}
+int b = a;				//illegal, incompatible types
+int c = *a;				//OK
 
-float x=5;
-float y=7;
+float x = 5;
+float y = 7;
 
 //this will be comparing the the addresses of x and y since operators for
 //primitive types pass by value. So this is a comparison of integer types.
-if (&x > &y) 
-	print("greater");
-
+if (&x > &y) print("greater");
 \end{codeblock}
+\exitexample
 
 Managed pointer types are built-in and are interoperable with raw pointers.
 
+\enterexample
 \begin{codeblock}
+T * p;			//raw pointer to a T
+T * unsafe p;		//unsafe pointer to a T
 
-//raw pointer to a T
-T * p;
+T * ! p;		//scoped pointer to a T
+T * scoped p;		//scoped pointer to a T
 
-//unsafe pointer to a T
-T * unsafe p;
+T * $ p;		//shared pointer to a T
+T * shared p;		//shared pointer to a T
 
-//scoped pointer to a T
-T * ! p;
-T * scoped p;
-
-//shared pointer to a T
-T * $ p;
-T * shared p;
-
-//weak pointer to a T
-T * weak p;
-
+T * weak p;		//weak pointer to a T
 \end{codeblock}
+\exitexample
 
 Scoped pointers can be implicitly casted to raw. All other managed pointers must be explicitly casted to a raw pointer. 
 
+\enterexample
 \begin{codeblock}
+T *! p0 = new T;
+T *$ p1 = new T;
+T * weak p2 = p1;
 
-T * shared p1 = new T;
-T * p2 = static_cast<T*>(p1);
-
+T * p4 = p0;
+p4 = static_cast<T*>(p1);
+p4 = static_cast<T*>(p2);
 \end{codeblock}
+\exitexample
 
 \Sec2[memory.pointers.raw]{Raw Pointer}
 
 Raw pointers are simmilar to C++ raw pointers except for a few restrictions:
-\begin(itemize)
-	\item Cannot be assigned a new expression.
-	\item Cannot be stored except by other raw pointers.
-	\item Cannot be deleted.
-\end(itemize) 
 
+	1) Cannot be assigned a new expression.
+	
+	2) Cannot be stored except by other raw pointers.
+	
+	3) Cannot be deleted.
+ 
+\enterexample
+\begin{codeblock}
+int * p = anotherPointer1;
+p = anotherPointer2;
+p = new int(10);	//illegal
+\end{codeblock}
+\exitexample
+
+
+\Sec2[memory.pointers.unsafe]{Unsafe Pointer}
+
+Unsafe pointers behave just like C++ raw pointers. When Valpine code interacts with C++ raw pointers, they are treated as unsafe pointers in Valpine. This may be confusing since C++ raw pointers look (and are named) the same as Valpine raw pointers, but they are not the same. Other pointer types may be casted to unsafe pointers using \tcode{static_cast<T* unsafe>(mySharedPointer)} for example.
+
+	
 \Sec2[memory.pointers.scoped]{Scoped Pointer}
 
 Scoped pointers behave exactly like raw pointers, but automatically call the appropriate delete when exiting the scope they were created in. They can only be assigned \tcode{nullptr} or a \tcode{newexpr} expression. They are used to express single ownership. A shorthand for the \tcode{scoped} keyword is \tcode{!}.
@@ -190,61 +206,5 @@ lock (pw)
 	
 } //reference count is decremented and memory is deleted if at zero
 
-
-\end{codeblock}
-
-
-
-
-\Sec1[memory.references]{References}
-
-References work largely the same as in C++. The only difference is when assigning a dereferenced, managed pointer to a reference. A scoped pointer can be dereferenced and assigned to a normal reference.
-
-\begin{codeblock}
-
-T *! p = new T;
-T &ref = *p;
-
-\end{codeblock}
-
-It is illegal to assign a dereferenced unique, shared, or weak pointer to a reference. The reference itself must match the type of managed pointer.
-
-\begin{codeblock}
-
-T * p0 = new T;
-T * unique p1 = new T;
-T * shared p2 = new T;
-T * weak p3 = p2;
-
-T &r1 = *p1; //illegal
-T &r2 = *p2; //illegal
-T &r3 = *p3; //illegal
-
-T & unique b1 = *p1;
-T & shared b2 = *p2;
-lock (p3) { T & shared b3 = *p3; } //legal since a weak pointer can initialize a shared pointer
-lock (p3) { T & weak b4 = *p3; }
-T & weak b5 = *p2; //legal since a shared pointer can initialize a weak pointer
-T & strong = *p0; //illegal
-
-\end{codeblock}
-
-References can be marked with the auto keyword to allow interoperability with all types of references. It is possible to have an auto reference with an auto base type. For example, \tcode{auto \& auto ref = *ptr;}.
-
-References declared as parameters for functions are marked auto by default. A redundancy warning should be issued if reference parameters are marked auto. The compiler should overload functions as needed to satisfy auto reference parameters if a suitable overload is not already implemented.
-
-\begin{codeblock}
-
-T * shared p1 = new T;
-
-T & shared r1 = *p1;
-T & auto r2 = *p1;
-auto & auto r3 = *p1;
-
-void doStuff(T & value) { print(value); }
-doStuff(*p1);
-
-T * unique p2 = new T;
-doStuff(*p2);
 
 \end{codeblock}
