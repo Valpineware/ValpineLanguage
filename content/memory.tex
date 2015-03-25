@@ -31,29 +31,97 @@ Valpine preserves the semantics of C++ memory managment, but adds new constructs
 
 \rSec1[memory.pointers]{Pointers}
 
-A raw pointer to some type may be declared normally such as \tcode{T *p;}. Additionally, there are four types of built-in managed pointers that can be used: scoped, unique, shared, and weak. These modifiers can be assigned much like the \tcode{const} modifier.
+Since the langauge does not use references, pointers must be used in situations where references normally would be used in C++. It is possible to explicitly take the address of something with the \& operator, but pointer assignments will implicitly take addresses as needed. For example:
 
 \begin{codeblock}
+int a = 10;
 
-T *			p1;	//raw pointer to a T
-T * !			p2;	//scoped pointer to a T
-T * scoped		p3;	//scoped pointer to a T
-T * ^			p4;	//unique pointer to a T
-T * unique		p5;	//unique pointer to a T
-T * shared		p6;	//shared pointer to a T
-T * weak		p7;	//weak pointer to a T
+//b and c both point to a
+int *b = a;
+int *c = &a;
+
+//d and e both point to b
+int **d = b;
+int **e = &b;
+\end{codeblock}
+
+The reason for implicitly taking the address is to allow overloaded operators and other functions to work with non-pointers since references do not exist. For example:
+
+\begin{codeblock}
+bool operator==(const T *lhs, const T *rhs)
+{
+	return lhs.value == rhs.value;
+}
+
+T t1;
+T t2;
+
+//without implicit address taking, this would be required
+if (&t1 == &t2)
+	print("Equal");
+
+//with implicit address taking, this is also legal
+if (t1 == t2)
+	print("Equal");
+\end{codeblock}
+
+Note that there is no implicit dereferencing, and all built in operators work on primitives by value.
+
+\begin{codeblock}
+int *!a = new int(10);
+int b = a;	//illegal, incompatible types
+int c = *a;	//OK
+
+float x=5;
+float y=7;
+
+//this will be comparing the the addresses of x and y since operators for
+//primitive types pass by value. So this is a comparison of integer types.
+if (&x > &y) 
+	print("greater");
 
 \end{codeblock}
 
-Scoped pointers can be implicitly casted to raw. All other managed pointers must be force casted to a raw pointer by using \tcode{rawptr()}. The \tcode{rawptr} function should be avoided and is only available for backwards compatability with legacy C++ systems.
+Managed pointer types are built-in and are interoperable with raw pointers.
+
+\begin{codeblock}
+
+//raw pointer to a T
+T * p;
+
+//unsafe pointer to a T
+T * unsafe p;
+
+//scoped pointer to a T
+T * ! p;
+T * scoped p;
+
+//shared pointer to a T
+T * $ p;
+T * shared p;
+
+//weak pointer to a T
+T * weak p;
+
+\end{codeblock}
+
+Scoped pointers can be implicitly casted to raw. All other managed pointers must be explicitly casted to a raw pointer. 
 
 \begin{codeblock}
 
 T * shared p1 = new T;
-T *p2 = rawptr(p1);
+T * p2 = static_cast<T*>(p1);
 
 \end{codeblock}
 
+\Sec2[memory.pointers.raw]{Raw Pointer}
+
+Raw pointers are simmilar to C++ raw pointers except for a few restrictions:
+\begin(itemize)
+	\item Cannot be assigned a new expression.
+	\item Cannot be stored except by other raw pointers.
+	\item Cannot be deleted.
+\end(itemize) 
 
 \Sec2[memory.pointers.scoped]{Scoped Pointer}
 
